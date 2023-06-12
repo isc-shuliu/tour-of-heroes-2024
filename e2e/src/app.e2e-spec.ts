@@ -1,9 +1,9 @@
-import { browser, element, by, ElementFinder } from 'protractor';
+import { browser, element, by, ElementFinder, ElementArrayFinder } from 'protractor';
 
 const expectedH1 = 'Tour of Heroes';
 const expectedTitle = `${expectedH1}`;
-const targetHero = { id: 16, name: 'RubberMan' };
-const targetHeroDashboardIndex = 3;
+const targetHero = { id: 15, name: 'Magneta' };
+const targetHeroDashboardIndex = 2;
 const nameSuffix = 'X';
 const newHeroName = targetHero.name + nameSuffix;
 
@@ -12,7 +12,7 @@ class Hero {
 
   // Factory methods
 
-  // Get hero from s formatted as '<id> <name>'.
+  // Hero from string formatted as '<id> <name>'.
   static fromString(s: string): Hero {
     return new Hero(
       +s.substring(0, s.indexOf(' ')),
@@ -20,7 +20,14 @@ class Hero {
     );
   }
 
-  // Get hero id and name from the given detail element.
+  // Hero from hero list <li> element.
+  static async fromLi(li: ElementFinder): Promise<Hero> {
+    const stringsFromA = await li.all(by.css('a')).getText();
+    const strings = stringsFromA[0].split(' ');
+    return { id: +strings[0], name: strings[1] };
+  }
+
+  // Hero id and name from the given detail element.
   static async fromDetail(detail: ElementFinder): Promise<Hero> {
     // Get hero id from the first <div>
     const id = await detail.all(by.css('div')).first().getText();
@@ -33,7 +40,7 @@ class Hero {
   }
 }
 
-describe('Tutorial part 5', () => {
+describe('Tutorial part 6', () => {
 
   beforeAll(() => browser.get(''));
 
@@ -50,14 +57,19 @@ describe('Tutorial part 5', () => {
       appHeroesHref: navElts.get(1),
       appHeroes: element(by.css('app-root app-heroes')),
       allHeroes: element.all(by.css('app-root app-heroes li')),
-      heroDetail: element(by.css('app-root app-hero-detail > div'))
+      selectedHeroSubview: element(by.css('app-root app-heroes > div:last-child')),
+
+      heroDetail: element(by.css('app-root app-hero-detail > div')),
+
+      searchBox: element(by.css('#search-box')),
+      searchResults: element.all(by.css('.search-result li'))
     };
   }
 
   describe('Initial page', () => {
 
     it(`has title '${expectedTitle}'`, async () => {
-        expect(await browser.getTitle()).toEqual(expectedTitle);
+      expect(await browser.getTitle()).toEqual(expectedTitle);
     });
 
     it(`has h1 '${expectedH1}'`, async () => {
@@ -90,8 +102,22 @@ describe('Tutorial part 5', () => {
 
     it(`updates hero name (${newHeroName}) in details view`, updateHeroNameInDetailView);
 
-    it(`saves and shows ${newHeroName} in Dashboard`, async () => {
+    it(`cancels and shows ${targetHero.name} in Dashboard`, async () => {
       await element(by.buttonText('go back')).click();
+      await browser.waitForAngular(); // seems necessary to gets tests to pass for toh-pt6
+
+      const targetHeroElt = getPageElts().topHeroes.get(targetHeroDashboardIndex);
+      expect(await targetHeroElt.getText()).toEqual(targetHero.name);
+    });
+
+    it(`selects and routes to ${targetHero.name} details`, dashboardSelectTargetHero);
+
+    it(`updates hero name (${newHeroName}) in details view`, updateHeroNameInDetailView);
+
+    it(`saves and shows ${newHeroName} in Dashboard`, async () => {
+      await element(by.buttonText('save')).click();
+      await browser.waitForAngular(); // seems necessary to gets tests to pass for toh-pt6
+
       const targetHeroElt = getPageElts().topHeroes.get(targetHeroDashboardIndex);
       expect(await targetHeroElt.getText()).toEqual(newHeroName);
     });
@@ -122,17 +148,113 @@ describe('Tutorial part 5', () => {
     it(`updates hero name (${newHeroName}) in details view`, updateHeroNameInDetailView);
 
     it(`shows ${newHeroName} in Heroes list`, async () => {
-      await element(by.buttonText('go back')).click();
+      await element(by.buttonText('save')).click();
+      await browser.waitForAngular();
       const expectedText = `${targetHero.id} ${newHeroName}`;
-      expect(await getHeroLiEltById(targetHero.id).getText()).toEqual(expectedText);
+      expect(await getHeroAEltById(targetHero.id).getText()).toEqual(expectedText);
     });
 
+    it(`deletes ${newHeroName} from Heroes list`, async () => {
+      const heroesBefore = await toHeroArray(getPageElts().allHeroes);
+      const li = getHeroLiEltById(targetHero.id);
+      await li.element(by.buttonText('x')).click();
+
+      const page = getPageElts();
+      expect(await page.appHeroes.isPresent()).toBeTruthy();
+      expect(await page.allHeroes.count()).toEqual(8, 'number of heroes');
+      const heroesAfter = await toHeroArray(page.allHeroes);
+      // console.log(await Hero.fromLi(page.allHeroes[0]));
+      const expectedHeroes =  heroesBefore.filter(h => h.name !== newHeroName);
+      expect(heroesAfter).toEqual(expectedHeroes);
+      // expect(page.selectedHeroSubview.isPresent()).toBeFalsy();
+    });
+
+    it(`adds back ${targetHero.name}`, async () => {
+      const addedHeroName = 'Alice';
+      const heroesBefore = await toHeroArray(getPageElts().allHeroes);
+      const numHeroes = heroesBefore.length;
+
+      await element(by.css('input')).sendKeys(addedHeroName);
+      await element(by.buttonText('Add hero')).click();
+
+      const page = getPageElts();
+      const heroesAfter = await toHeroArray(page.allHeroes);
+      expect(heroesAfter.length).toEqual(numHeroes + 1, 'number of heroes');
+
+      expect(heroesAfter.slice(0, numHeroes)).toEqual(heroesBefore, 'Old heroes are still there');
+
+      const maxId = heroesBefore[heroesBefore.length - 1].id;
+      expect(heroesAfter[numHeroes]).toEqual({id: maxId + 1, name: addedHeroName});
+    });
+
+    it('displays correctly styled buttons', async () => {
+      const buttons = await element.all(by.buttonText('x'));
+
+      for (const button of buttons) {
+        // Inherited styles from styles.css
+        expect(await button.getCssValue('font-family')).toBe('Arial, Helvetica, sans-serif');
+        expect(await button.getCssValue('border')).toContain('none');
+        expect(await button.getCssValue('padding')).toBe('1px 10px 3px');
+        expect(await button.getCssValue('border-radius')).toBe('4px');
+        // Styles defined in heroes.component.css
+        expect(await button.getCssValue('left')).toBe('210px');
+        expect(await button.getCssValue('top')).toBe('5px');
+      }
+
+      const addButton = element(by.buttonText('Add hero'));
+      // Inherited styles from styles.css
+      expect(await addButton.getCssValue('font-family')).toBe('Arial, Helvetica, sans-serif');
+      expect(await addButton.getCssValue('border')).toContain('none');
+      expect(await addButton.getCssValue('padding')).toBe('8px 24px');
+      expect(await addButton.getCssValue('border-radius')).toBe('4px');
+    });
+
+  });
+
+  describe('Progressive hero search', () => {
+
+    beforeAll(() => browser.get(''));
+
+    it(`searches for 'Ma'`, async () => {
+      await getPageElts().searchBox.sendKeys('Ma');
+      await browser.sleep(1000);
+
+      expect(await getPageElts().searchResults.count()).toBe(4);
+    });
+
+    it(`continues search with 'g'`, async () => {
+      await getPageElts().searchBox.sendKeys('g');
+      await browser.sleep(1000);
+      expect(await getPageElts().searchResults.count()).toBe(2);
+    });
+
+    it(`continues search with 'n' and gets ${targetHero.name}`, async () => {
+      await getPageElts().searchBox.sendKeys('n');
+      await browser.sleep(1000);
+      const page = getPageElts();
+      expect(await page.searchResults.count()).toBe(1);
+      const hero = page.searchResults.get(0);
+      expect(await hero.getText()).toEqual(targetHero.name);
+    });
+
+    it(`navigates to ${targetHero.name} details view`, async () => {
+      const hero = getPageElts().searchResults.get(0);
+      expect(await hero.getText()).toEqual(targetHero.name);
+      await hero.click();
+
+      const page = getPageElts();
+      expect(await page.heroDetail.isPresent()).toBeTruthy('shows hero detail');
+      const hero2 = await Hero.fromDetail(page.heroDetail);
+      expect(hero2.id).toEqual(targetHero.id);
+      expect(hero2.name).toEqual(targetHero.name.toUpperCase());
+    });
   });
 
   async function dashboardSelectTargetHero() {
     const targetHeroElt = getPageElts().topHeroes.get(targetHeroDashboardIndex);
     expect(await targetHeroElt.getText()).toEqual(targetHero.name);
     await targetHeroElt.click();
+    await browser.waitForAngular(); // seems necessary to gets tests to pass for toh-pt6
 
     const page = getPageElts();
     expect(await page.heroDetail.isPresent()).toBeTruthy('shows hero detail');
@@ -164,7 +286,16 @@ async function expectHeading(hLevel: number, expectedText: string): Promise<void
   expect(hText).toEqual(expectedText, hTag);
 }
 
-function getHeroLiEltById(id: number) {
+function getHeroAEltById(id: number): ElementFinder {
   const spanForId = element(by.cssContainingText('li span.badge', id.toString()));
   return spanForId.element(by.xpath('..'));
+}
+
+function getHeroLiEltById(id: number): ElementFinder {
+  const spanForId = element(by.cssContainingText('li span.badge', id.toString()));
+  return spanForId.element(by.xpath('../..'));
+}
+
+async function toHeroArray(allHeroes: ElementArrayFinder): Promise<Hero[]> {
+  return allHeroes.map(hero => Hero.fromLi(hero!));
 }
