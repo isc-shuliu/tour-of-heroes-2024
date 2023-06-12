@@ -32,7 +32,7 @@ class Hero {
   }
 }
 
-describe('Tutorial part 3', () => {
+describe('Tutorial part 4', () => {
   beforeAll(() => browser.get(''));
   describe('Initial page', initialPageTests);
   describe('Select hero', selectHeroTests);
@@ -41,7 +41,7 @@ describe('Tutorial part 3', () => {
 
 function initialPageTests() {
   it(`has title '${expectedTitle}'`, async () => {
-      expect(await browser.getTitle()).toEqual(expectedTitle);
+    expect(await browser.getTitle()).toEqual(expectedTitle);
   });
 
   it(`has h1 '${expectedH1}'`, async () => {
@@ -66,7 +66,7 @@ function initialPageTests() {
 
 function selectHeroTests() {
   it(`selects ${targetHero.name} from hero list`, async () => {
-    const hero = element(by.cssContainingText('li button', targetHero.id.toString() + targetHero.name.toString()));
+    const hero = element(by.cssContainingText('li span.badge', targetHero.id.toString()));
     await hero.click();
     // Nothing specific to expect other than lack of exceptions.
   });
@@ -79,9 +79,14 @@ function selectHeroTests() {
 
   it('shows selected hero details', async () => {
     const page = getPageElts();
+    const heroElement = element(by.cssContainingText('li span.badge', targetHero.id.toString()));
+    await heroElement.click();
+    const message = element.all(by.css('app-root > app-messages > div > div')).get(1);
     const hero = await Hero.fromDetail(page.heroDetail);
     expect(hero.id).toEqual(targetHero.id);
     expect(hero.name).toEqual(targetHero.name.toUpperCase());
+    // Message text contain id number matches the hero.id number
+    expect(await message.getText()).toContain(await heroElement.getAttribute('id'));
   });
 }
 
@@ -101,7 +106,7 @@ function updateHeroTests() {
 
   it(`shows updated hero name in list`, async () => {
     const page = getPageElts();
-    const hero = Hero.fromString(await (await page.selected.getText()).replace('\n', ' '));
+    const hero = Hero.fromString((await page.selected.getText()).replace('\n', ' '));
     const newName = targetHero.name + nameSuffix;
     expect(hero.id).toEqual(targetHero.id);
     expect(hero.name).toEqual(newName);
