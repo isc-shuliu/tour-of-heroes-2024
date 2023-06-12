@@ -32,7 +32,7 @@ class Hero {
   }
 }
 
-describe('Tutorial part 2', () => {
+describe('Tutorial part 3', () => {
   beforeAll(() => browser.get(''));
   describe('Initial page', initialPageTests);
   describe('Select hero', selectHeroTests);
@@ -41,7 +41,7 @@ describe('Tutorial part 2', () => {
 
 function initialPageTests() {
   it(`has title '${expectedTitle}'`, async () => {
-    expect(await browser.getTitle()).toEqual(expectedTitle);
+      expect(await browser.getTitle()).toEqual(expectedTitle);
   });
 
   it(`has h1 '${expectedH1}'`, async () => {
@@ -66,7 +66,7 @@ function initialPageTests() {
 
 function selectHeroTests() {
   it(`selects ${targetHero.name} from hero list`, async () => {
-    const hero = element(by.cssContainingText('button span.badge', targetHero.id.toString()));
+    const hero = element(by.cssContainingText('li button', targetHero.id.toString() + targetHero.name.toString()));
     await hero.click();
     // Nothing specific to expect other than lack of exceptions.
   });
@@ -101,7 +101,7 @@ function updateHeroTests() {
 
   it(`shows updated hero name in list`, async () => {
     const page = getPageElts();
-    const hero = Hero.fromString((await page.selected.getText()).replace('\n', ' '));
+    const hero = Hero.fromString(await (await page.selected.getText()).replace('\n', ' '));
     const newName = targetHero.name + nameSuffix;
     expect(hero.id).toEqual(targetHero.id);
     expect(hero.name).toEqual(newName);
@@ -124,6 +124,6 @@ function getPageElts() {
   return {
     heroes: element.all(by.css('app-root li button')),
     selected: element(by.css('app-root li button.selected')),
-    heroDetail: element(by.css('app-root > div, app-root > app-heroes > div'))
+    heroDetail: element(by.css('app-root > div, app-root > app-heroes > app-hero-detail > div'))
   };
 }
