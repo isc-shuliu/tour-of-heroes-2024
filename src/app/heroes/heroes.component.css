@@ -65,6 +65,7 @@ input {
 button.delete {
   position: absolute;
   left: 210px;
+  top: 5px;
   color:  #525252;
   font-size: 1.1rem;
   padding: 1px 10px 3px 10px;
