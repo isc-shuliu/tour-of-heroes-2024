@@ -22,6 +22,7 @@ h2 {
   align-items: flex-start;
 }
 
+/*
 a {
   background-color: #3f525c;
   border-radius: 2px;
@@ -36,7 +37,6 @@ a {
   margin: .5rem auto;
   box-sizing: border-box;
 
-  /* flexbox */
   order: 0;
   flex: 0 1 auto;
   align-self: auto;
@@ -52,3 +52,4 @@ a {
 a:hover {
   background-color: black;
 }
+*/

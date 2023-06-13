@@ -15,6 +15,16 @@ import { HeroesComponent } from './heroes/heroes.component';
 import { HeroSearchComponent } from './hero-search/hero-search.component';
 import { MessagesComponent } from './messages/messages.component';
 
+import { MatButtonModule } from '@angular/material/button';
+import { MatListModule } from '@angular/material/list';
+
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatRippleModule } from '@angular/material/core';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatBottomSheetModule } from '@angular/material/bottom-sheet';
+
 @NgModule({
   imports: [
     BrowserModule,
@@ -27,7 +37,17 @@ import { MessagesComponent } from './messages/messages.component';
     // Remove it when a real server is ready to receive requests.
     HttpClientInMemoryWebApiModule.forRoot(
       InMemoryDataService, { dataEncapsulation: false }
-    )
+    ),
+    BrowserAnimationsModule,
+
+    // Angular Material stuff
+    MatButtonModule,
+    MatListModule,
+    MatRippleModule,
+    MatIconModule,
+    MatCardModule,
+    MatSidenavModule,
+    MatBottomSheetModule
   ],
   declarations: [
     AppComponent,

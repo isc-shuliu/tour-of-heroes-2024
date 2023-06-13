@@ -1,7 +1,19 @@
-<h1>{{title}}</h1>
-<nav>
-  <a routerLink="/dashboard">Dashboard</a>
-  <a routerLink="/heroes">Heroes</a>
-</nav>
-<router-outlet></router-outlet>
-<app-messages></app-messages>
+
+
+<mat-drawer-container class="example-container" autosize>
+  <mat-drawer #drawer class="example-sidenav" mode="over">
+    <nav>
+      <p><a routerLink="/dashboard">Dashboard</a></p>
+      <p><a routerLink="/heroes">Heroes</a></p>
+    </nav>
+  </mat-drawer>
+
+  <h1 class="mat-elevation-z4">
+    <button mat-icon-button (click)="drawer.toggle()">
+      <mat-icon>menu</mat-icon>
+    </button>
+    {{title}}
+  </h1>
+  <router-outlet></router-outlet>
+  <button mat-stroked-button color="primary" *ngIf="messageService.messages.length" (click)="openBottomSheet()">Show Messages</button>
+</mat-drawer-container>
